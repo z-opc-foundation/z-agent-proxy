@@ -8,9 +8,12 @@
 | 坐标 | `io.github.yuku123:z-agent-proxy` | `grep -n '<artifactId>z-agent-proxy' pom.xml` |
 | 当前源码版本 | `0.1.0`（`<revision>`，唯一真源） | `grep -n '<revision>' pom.xml` |
 | Central 上实际有的版本 | `0.1.0`（2026-09-27 实测；清单会变，要信命令别信这一行） | `curl -s https://repo1.maven.org/maven2/io/github/yuku123/z-agent-proxy/maven-metadata.xml \| grep -o '<version>[^<]*'` |
+| 0.1.0 在 Central 上读得动吗 | **读不动**：那份 pom 自己的 `<version>` 上传成了字面 `${revision}`（当时仓里没有常开 flatten），文件在但干净机器解析不出；Central 不可覆盖 ⇒ 只能抬新号 | `curl -s https://repo1.maven.org/maven2/io/github/yuku123/z-agent-proxy/0.1.0/z-agent-proxy-0.1.0.pom \| sed -n '25,27p'` |
 | 模块结构 | 单模块 jar，无子模块 | `grep -c '<module>' pom.xml`（输出 `0`） |
-| JDK | Java 8 | `grep -n 'maven.compiler' pom.xml` |
-| 内核 pin | `z-agent-kernel.version = ${revision}` ⇒ 跟着本仓版本号走（当前 0.1.0） | `grep -n 'z-agent-kernel.version' pom.xml` |
+| parent | `io.github.yuku123:z-boot-parent:1.0.19`（`relativePath` 留空，parent 在 repo1） | `grep -n 'z-boot-parent' pom.xml` |
+| JDK | Java 8 + `-parameters`，由 parent 的 `pluginManagement` 下发（本仓不写 `maven.compiler.*`） | `grep -c 'maven.compiler' pom.xml`（输出 `0`） |
+| 内核 pin | kernel 三坐标不写 `<version>`，面值由 fleet 下发（现读 `0.1.1`；0.2.x 未上 Central） | `grep -n '<z-agent-kernel.version>' ../z-boot/z-boot-fleet/pom.xml` |
+| 发布形状 | 常开 flatten `oss`：入库/上传的是自包含 pom（`<parent>` 计数 0、依赖全是字面版本） | `grep -c '<parent>' .flattened-pom.xml`（输出 `0`） |
 | 源码规模 | main 3 个 `.java` / test 1 个 | `find src -name '*.java' \| grep -c 'src/main/'` 与 `.../grep -c 'src/test/'` |
 | 测试数 | **3 支 `@Test`**（文本口径，全部在 `AiderAdapterTest`） | `grep -rho '@Test' --include='*.java' src \| wc -l` |
 
@@ -60,15 +63,19 @@ rm -rf target && mvn -o test   # 3 支，全部不依赖网络、不依赖本机
 
 ## 与内核版本的关系
 
-本仓 pin 的是 `${revision}`=0.1.0，而 `z-agent-kernel` 源码树已到 `0.2.1`（`../z-agent-kernel/pom.xml` 的 `<revision>`）。
-两边不冲突的前提是你**本机 m2 里有 0.1.0**（或从 Central 拉）。要针对 0.2.x 内核构建，显式覆盖：
+kernel 三坐标在本仓不写 `<version>`，面值由 `z-boot-fleet` 下发（现读 `0.1.1`，复算
+`grep -n '<z-agent-kernel.version>' ../z-boot/z-boot-fleet/pom.xml`），而 `z-agent-kernel` 源码树已到
+`0.2.1`（`../z-agent-kernel/pom.xml` 的 `<revision>`）。要针对 0.2.x 内核构建，那个键仍然可以用 `-D` 覆盖：
 
 ```bash
 mvn -o test -Dz-agent-kernel.version=0.2.1   # 需先在内核仓 mvn -o install，见其 README
 ```
 
-注意 0.2.x 目前**没有发 Central**（复算命令见上表第一行"Central 上实际有的版本"），
-所以 `-Dz-agent-kernel.version=0.2.1` 只在装过该版本的本机能成。
+2026-09-29 在 repo1 净室实测：`-Dz-agent-kernel.version=0.2.0` 确实把三格换成 0.2.0，但 0.2.x 没发 Central
+（`curl -s -o /dev/null -w '%{http_code}' -r 0-0 https://repo1.maven.org/maven2/io/github/yuku123/z-agent-kernel-agent/0.2.0/z-agent-kernel-agent-0.2.0.pom` ⇒ 404），
+所以这条只在装过该版本的本机能成。另外 `dependency:tree` 遇到取不到的 pom 只打
+`The POM for ... is missing, no dependency information available` 的 WARNING 就继续报 SUCCESS，
+别拿它当"这件存在"。
 
 ## 许可
 

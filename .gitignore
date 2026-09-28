@@ -25,3 +25,8 @@ replay_pid*
 
 # Maven build output
 target/
+
+# flatten-maven-plugin 产物（updatePomFile=true 写在仓根）
+*.flattened-pom.xml
+.flattened-pom.xml
+**/.flattened-pom.xml
