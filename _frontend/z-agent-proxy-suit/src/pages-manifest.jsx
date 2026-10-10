@@ -10,7 +10,7 @@ export const menuItems = [
     { key: '/z-agent-proxy/status', label: '服务状态', icon: <MonitorOutlined /> },
 ]
 
-export const routeTable = [
+export const routes = [
     { path: '/z-agent-proxy/home', Component: HomePage },
     { path: '/z-agent-proxy/status', Component: StatusPage },
 ]
