@@ -1,7 +1,7 @@
 package com.zifang.z.agent.proxy.adapter.cursor;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zifang.util.json.JsonCursor;
+import com.zifang.util.json.JsonUtil;
 import com.zifang.z.agent.kernel.agent.AgentRequest;
 import com.zifang.z.agent.kernel.agent.AgentResponse;
 import com.zifang.z.agent.kernel.message.Msg;
@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,7 +50,6 @@ public class CursorAdapter implements ThirdPartyAgentAdapter {
     private final String endpoint;
     private final String apiKey;
     private final OkHttpClient http;
-    private final ObjectMapper mapper = new ObjectMapper();
     private volatile boolean closed = false;
 
     public CursorAdapter(String adapterName, String endpoint, String apiKey) {
@@ -119,7 +119,7 @@ public class CursorAdapter implements ThirdPartyAgentAdapter {
 
             Request.Builder rb = new Request.Builder()
                     .url(endpoint)
-                    .post(RequestBody.create(mapper.writeValueAsBytes(body), JSON));
+                    .post(RequestBody.create(JsonUtil.toJson(body).getBytes(StandardCharsets.UTF_8), JSON));
             if (apiKey != null && !apiKey.isEmpty()) {
                 rb.header("Authorization", "Bearer " + apiKey);
             }
@@ -131,8 +131,8 @@ public class CursorAdapter implements ThirdPartyAgentAdapter {
                             Collections.<AgentResponse.Step>emptyList(),
                             TokenUsage.empty(), "http_error", null, null);
                 }
-                JsonNode root = mapper.readTree(resp.body().bytes());
-                String content = root.path("choices").path(0).path("message").path("content").asText("");
+                JsonCursor root = JsonCursor.of(JsonUtil.parse(new String(resp.body().bytes(), StandardCharsets.UTF_8)));
+                String content = root.path("choices").at(0).path("message").path("content").asText();
                 long promptTokens = root.path("usage").path("prompt_tokens").asLong(0L);
                 long completionTokens = root.path("usage").path("completion_tokens").asLong(0L);
                 long totalTokens = promptTokens + completionTokens;

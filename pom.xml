@@ -71,6 +71,26 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- z-util 抬到 1.2.2(去 Jackson 那版): 树导航改用自研 JsonUtil/JsonCursor,
+                 不再靠 ObjectMapper.readTree. 继承来的 z-boot-fleet DM 把 z-util 压在 1.0.22,
+                 而 toPlainValue/JsonCursor 是 1.1.1 起的 API, 用旧版会编译不过.
+                 ⚠ 三格必须同笔钉: dependencyManagement 对**传递依赖**同样生效, 只钉 parser-json
+                 会被地板把 dsl-kernel 压回 1.0.22, 运行期 parser 与 dsl 两套字节码互认会裂开. -->
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-core</artifactId>
+                <version>1.2.2</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-parser-json</artifactId>
+                <version>1.2.2</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-dsl-kernel</artifactId>
+                <version>1.2.2</version>
+            </dependency>
             <!-- 自家坐标钉 ${project.version}（挡住继承来的 fleet 旧格 0.1.0 反污染本仓产物）。
                  kotlin 四格写字面 1.9.21：父链（spring-boot 2.7.18）把 okhttp 4.12.0 自带的 1.8.21、地板 okio 3.9.0 自带的 1.9.21 一起压成 1.6.21 ⇒ 拒静默降级。 -->
             <dependency>
@@ -102,6 +122,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- 自研 JSON(去 Jackson): CursorAdapter 用 JsonCursor 读响应树, 版本由根 DM 给 -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-parser-json</artifactId>
+        </dependency>
         <!-- 三方代理只需 kernel.agent SPI + kernel.message + kernel.types (其他按需) -->
         <dependency>
             <groupId>io.github.yuku123</groupId>
