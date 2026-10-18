@@ -35,3 +35,9 @@ target/
 /.cache/
 **/__pycache__/
 *.pyc
+
+# ===== 2026-10-18 补充：前端依赖与 OS 产物 =====
+node_modules/
+
+# OS
+.DS_Store
