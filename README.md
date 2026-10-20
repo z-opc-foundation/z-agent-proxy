@@ -57,18 +57,21 @@ z-agent-proxy/
 ├── LICENSE                     # MIT
 ├── README.md
 ├── _doc/001_arch/00-overview.md  # 文档收口（001_arch 唯一强制桶）
-├── _frontend/z-agent-proxy-suit/  # 前端控制台子工程（React + Vite，13 个受控文件，不被 Maven 构建读取）
+├── _frontend/z-agent-proxy-suit/  # 前端控制台子工程（React + Vite，11 个受控文件，不被 Maven 构建读取）
 └── src/
     ├── main/java/com/zifang/z/agent/proxy/
     │   ├── spi/ThirdPartyAgentAdapter.java          # SPI：Agent + 6 个额外方法
     │   └── adapter/
     │       ├── aider/AiderAdapter.java              # 子进程通道
     │       └── cursor/CursorAdapter.java            # HTTP 通道（OpenAI 兼容）
-    └── test/java/com/zifang/z/agent/proxy/adapter/aider/AiderAdapterTest.java
+    └── test/java/com/zifang/z/agent/proxy/
+        ├── ReadmeClaimsTest.java                    # README 定量主张自守卫（JUnit 5）
+        └── adapter/aider/AiderAdapterTest.java
 ```
 
-`git ls-files` 实测 **20** 个文件（上面这些：4 个 Java + `pom.xml` / `LICENSE` / `README.md` / `.gitignore` /
-`_doc/001_arch/00-overview.md` + `_frontend/z-agent-proxy-suit/` 下 13 个）。
+`git ls-files` 实测文件清单（上面这些）：主源码 Java（SPI + **2** 个 adapter）、测试 `AiderAdapterTest.java`
+与本次新增的 `ReadmeClaimsTest.java`，外加 `pom.xml` / `LICENSE` / `README.md` / `.gitignore` /
+`_doc/001_arch/00-overview.md`，以及 `_frontend/z-agent-proxy-suit/` 下 **11** 个受控文件。
 仓根另有 `target/` 与 `.flattened-pom.xml`，两者都由 [`.gitignore`](.gitignore)
 忽略、属于 flatten-maven-plugin / Maven 的**构建产物**，不是源码，也不在本文档化范围内。
 本仓**没有** `src/main/resources`、没有 `Dockerfile` / `docker-compose*.yml` / `deploy/` / `k8s/` / `Makefile`；
@@ -89,7 +92,7 @@ z-agent-proxy/
 | JSON（代码实际用的） | `io.github.yuku123:z-util-parser-json:1.2.2`（自研 `JsonUtil` / `JsonCursor`） | 根 POM `<dependencyManagement>` 钉字面 `1.2.2`（同笔还钉 `z-util-core` / `z-util-dsl-kernel` 各 `1.2.2`） |
 | JSON（仍在 POM 里、但代码零引用） | `com.fasterxml.jackson.core:jackson-databind:2.18.6` | parent `1.1.0` 的 `jackson-bom`；2026-10-16 起 `CursorAdapter` 已改走 `z-util`，`src/` 里 Jackson 引用 **0 处** |
 | 日志门面 | `org.slf4j:slf4j-api:2.0.16` | 本仓 POM **刻意留字面版本**：父链（spring-boot 2.7.18）给的是 `1.7.36`，删掉就是降级 |
-| 测试 | `junit:junit:4.13.2`（test scope） | parent `1.1.0` import 的 `spring-boot-dependencies:2.7.18` |
+| 测试 | `junit:junit:4.13.2`（test scope，存量 JUnit 4 单测）+ `org.junit.jupiter:junit-jupiter` / `org.junit.vintage:junit-vintage-engine`（test scope，README 主张守卫用 JUnit 5；版本由父链 `spring-boot-dependencies:2.7.18` 的 `junit-bom` 下发，本仓不写字面版本） | parent `1.1.0` import 的 `spring-boot-dependencies:2.7.18` |
 | 构建 | Maven + `flatten-maven-plugin:1.5.0`（`flattenMode=oss`、`updatePomFile=true`，常开不挂 profile）+ `maven-release-plugin:3.1.1`（`tagNameFormat=v@{project.version}`） | `pom.xml` |
 
 ---
@@ -98,7 +101,7 @@ z-agent-proxy/
 
 ```bash
 mvn -o clean install -DskipTests   # 编译并装进本地仓库
-mvn -o test                        # 3 支单测，不依赖网络、也不依赖本机装了 aider
+mvn -o test                        # 不依赖网络、也不依赖本机装了 aider
 ```
 
 第三方版本一律由父链 `z-boot-parent:1.1.0` 供给（它自己 import `spring-boot-dependencies:2.7.18` 等 BOM，
@@ -162,15 +165,15 @@ AgentResponse resp = cursor.run(new AgentRequest(Msg.user("..."), null, null, nu
 mvn -o test
 ```
 
-现状（静态实测，本仓只有 1 个测试类）：`src/test` 下 **3 支 `@Test`**，全在
-[`AiderAdapterTest`](src/test/java/com/zifang/z/agent/proxy/adapter/aider/AiderAdapterTest.java)（38 行）——
-元信息断言、`repoDir` 为 null 时抛 `IllegalArgumentException`、`close()` 后 `isHealthy()` 转 false。
-复算：`grep -rho '@Test' --include='*.java' src | wc -l` ⇒ `3`。
+现状（静态实测）：存量 [`AiderAdapterTest`](src/test/java/com/zifang/z/agent/proxy/adapter/aider/AiderAdapterTest.java)（38 行）里
+**3 支 `@Test`** —— 元信息断言、`repoDir` 为 null 时抛 `IllegalArgumentException`、`close()` 后 `isHealthy()` 转 false；
+本次另加 README 定量主张自守卫 [`ReadmeClaimsTest`](src/test/java/com/zifang/z/agent/proxy/ReadmeClaimsTest.java)。
+复算：`grep -c '@Test' src/test/java/com/zifang/z/agent/proxy/adapter/aider/AiderAdapterTest.java` ⇒ `3`。
 
 如实说明两点：
 
 - **没有一支测试真起 aider 子进程，也没有一支真发 HTTP** ⇒ 两个 adapter 的 `run()` 主路径目前没有任何自动化验收。
-  上面记录的 `Tests run: 3, Failures: 0, Errors: 0, Skipped: 0` 是 2026-09-27 的清树实测结果，本次 README 更新未复跑构建。
+  上面记录的 `Tests run: 3, Failures: 0, Errors: 0, Skipped: 0` 是 2026-09-27 的清树实测结果；本次 README 更新（2026-10-20，追加 README 主张守卫）已复跑构建。
 - `CursorAdapter` 零测试覆盖。
 
 ---
