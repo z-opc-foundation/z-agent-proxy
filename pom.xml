@@ -164,6 +164,20 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- README 定量主张自守卫用 JUnit 5。版本不写死：由父链 spring-boot-dependencies:2.7.18
+             里的 junit-bom 下发（本仓不引入字面版本钉，理由同 slf4j-api 那条注释的反面：这条是"没必要写"）。 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- 存量 AiderAdapterTest 是 JUnit 4（org.junit.Test）：JUnit 5 上场后 surefire 改走 junit-platform，
+             那 3 支存量单测必须靠 vintage 引擎才继续跑，否则它们会被静默跳过（比红更坏）。 -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
