@@ -41,3 +41,6 @@ node_modules/
 
 # OS
 .DS_Store
+
+# 前端构建产物（suit 的 dist 不入库）
+**/dist/
