@@ -18,10 +18,10 @@
 | **仓库** | `z-agent-proxy`（单模块 jar，无 reactor 子模块） | `grep -c '<module>' pom.xml` ⇒ `0` |
 | **Maven 坐标** | `io.github.yuku123:z-agent-proxy:${revision}` | `grep -n '<artifactId>z-agent-proxy' pom.xml` |
 | **当前版本** | `0.1.1`（根 POM `<properties><revision>`，唯一真源；CI-friendly + flatten） | `grep -n '<revision>' pom.xml` |
-| **父项目** | `io.github.yuku123:z-boot-parent:1.1.0`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘） | `grep -n -A3 '<parent>' pom.xml` |
+| **父项目** | `io.github.yuku123:z-boot-parent:1.2.0`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘；2026-10-30 Java17/SB3 火车） | `grep -n -A3 '<parent>' pom.xml` |
 | **Maven Central** | **`0.1.1` 已发布**：`pom` / `jar` / `-sources.jar` / `-javadoc.jar` 及 `.asc` 齐，普通 GET `200`，带 Range 的 `-r 0-0` GET `206`；`0.1.0` 同目录也在（历史版本，见下节）。`maven-metadata.xml` 实测只有 `0.1.0` / `0.1.1` 两版 | `curl -s -o /dev/null -w '%{http_code}\n' https://repo1.maven.org/maven2/io/github/yuku123/z-agent-proxy/0.1.1/z-agent-proxy-0.1.1.pom` |
 | **默认端口** | 无（库形态，不起服务、不开端口；全仓无 `application*.yml`） | `find . -name 'application*' -not -path './target/*'` ⇒ 空 |
-| **运行口径** | Java 8（`maven.compiler.source/target=8` + `-parameters`，全部由 parent 的 `pluginManagement` 下发）；**非 Spring Boot 应用**，`src/main` 里零 `org.springframework` import | `grep -c 'maven.compiler' pom.xml` ⇒ `0`；`grep -rn 'import org.springframework' src/main` ⇒ 空 |
+| **运行口径** | Java 17（`maven.compiler.source/target=17` + `-parameters`，全部由 parent 的 `pluginManagement` 下发）；**非 Spring Boot 应用**，`src/main` 里零 `org.springframework` import | `grep -c 'maven.compiler' pom.xml` ⇒ `0`；`grep -rn 'import org.springframework' src/main` ⇒ 空 |
 | **最近更新** | 2026-10-18（仓内最后一次提交 `0e3f121` "chore: 忽略 node_modules 与 .DS_Store"） | — |
 
 ---
@@ -53,11 +53,11 @@ role 映射为 `user` / `assistant` / `system`，其它 role 兜底成 `user`。
 
 ```
 z-agent-proxy/
-├── pom.xml                     # 单模块 POM：parent z-boot-parent:1.1.0，<revision>=0.1.1
+├── pom.xml                     # 单模块 POM：parent z-boot-parent:1.2.0，<revision>=0.1.1
 ├── LICENSE                     # MIT
 ├── README.md
 ├── _doc/001_arch/00-overview.md  # 文档收口（001_arch 唯一强制桶）
-├── _frontend/z-agent-proxy-suit/  # 前端控制台子工程（React + Vite，11 个受控文件，不被 Maven 构建读取）
+├── _frontend/z-agent-proxy-suit/  # 前端控制台子工程（React + Vite，14 个受控文件，不被 Maven 构建读取）
 └── src/
     ├── main/java/com/zifang/z/agent/proxy/
     │   ├── spi/ThirdPartyAgentAdapter.java          # SPI：Agent + 6 个额外方法
@@ -71,7 +71,7 @@ z-agent-proxy/
 
 `git ls-files` 实测文件清单（上面这些）：主源码 Java（SPI + **2** 个 adapter）、测试 `AiderAdapterTest.java`
 与本次新增的 `ReadmeClaimsTest.java`，外加 `pom.xml` / `LICENSE` / `README.md` / `.gitignore` /
-`_doc/001_arch/00-overview.md`，以及 `_frontend/z-agent-proxy-suit/` 下 **11** 个受控文件。
+`_doc/001_arch/00-overview.md`，以及 `_frontend/z-agent-proxy-suit/` 下 **14** 个受控文件。
 仓根另有 `target/` 与 `.flattened-pom.xml`，两者都由 [`.gitignore`](.gitignore)
 忽略、属于 flatten-maven-plugin / Maven 的**构建产物**，不是源码，也不在本文档化范围内。
 本仓**没有** `src/main/resources`、没有 `Dockerfile` / `docker-compose*.yml` / `deploy/` / `k8s/` / `Makefile`；
@@ -86,11 +86,11 @@ z-agent-proxy/
 
 | 层级 | 技术 / 版本 | 来源 |
 |------|------------|------|
-| 语言 / 运行时 | Java 8 | parent `1.1.0` 下发 `maven.compiler.source/target=8` + `-parameters` |
-| Agent SPI | `z-agent-kernel-agent` / `-message` / `-types` | 本仓 POM **不写 `<version>`**，面值由父链 `z-boot-parent:1.1.0` 的 `z-agent-kernel.version` 下发（见文末「与内核版本的关系」） |
-| HTTP 客户端 | `com.squareup.okhttp3:okhttp:4.12.0` | parent `1.1.0` 属性 `okhttp.version`；kotlin 四格在 `<dependencyManagement>` 里钉字面 `1.9.21`，拒静默降级 |
+| 语言 / 运行时 | Java 17（2026-10-30 火车） | parent `1.2.0` 下发 `maven.compiler.source/target=17` + `-parameters`（Spring Boot 3.3.13） |
+| Agent SPI | `z-agent-kernel-agent` / `-message` / `-types` | 本仓 POM **不写 `<version>`**，面值由父链 `z-boot-parent:1.2.0` 的 `z-agent-kernel.version` 下发（见文末「与内核版本的关系」） |
+| HTTP 客户端 | `com.squareup.okhttp3:okhttp:4.12.0` | parent `1.2.0` 属性 `okhttp.version`；kotlin 四格在 `<dependencyManagement>` 里钉字面 `1.9.21`，拒静默降级 |
 | JSON（代码实际用的） | `io.github.yuku123:z-util-parser-json:1.2.2`（自研 `JsonUtil` / `JsonCursor`） | 根 POM `<dependencyManagement>` 钉字面 `1.2.2`（同笔还钉 `z-util-core` / `z-util-dsl-kernel` 各 `1.2.2`） |
-| JSON（仍在 POM 里、但代码零引用） | `com.fasterxml.jackson.core:jackson-databind:2.18.6` | parent `1.1.0` 的 `jackson-bom`；2026-10-16 起 `CursorAdapter` 已改走 `z-util`，`src/` 里 Jackson 引用 **0 处** |
+| JSON（仍在 POM 里、但代码零引用） | `com.fasterxml.jackson.core:jackson-databind:2.18.6` | parent `1.2.0` 的 `jackson-bom`；2026-10-16 起 `CursorAdapter` 已改走 `z-util`，`src/` 里 Jackson 引用 **0 处** |
 | 日志门面 | `org.slf4j:slf4j-api:2.0.16` | 本仓 POM **刻意留字面版本**：父链（spring-boot 2.7.18）给的是 `1.7.36`，删掉就是降级 |
 | 测试 | `junit:junit:4.13.2`（test scope，存量 JUnit 4 单测）+ `org.junit.jupiter:junit-jupiter` / `org.junit.vintage:junit-vintage-engine`（test scope，README 主张守卫用 JUnit 5；版本由父链 `spring-boot-dependencies:2.7.18` 的 `junit-bom` 下发，本仓不写字面版本） | parent `1.1.0` import 的 `spring-boot-dependencies:2.7.18` |
 | 构建 | Maven + `flatten-maven-plugin:1.5.0`（`flattenMode=oss`、`updatePomFile=true`，常开不挂 profile）+ `maven-release-plugin:3.1.1`（`tagNameFormat=v@{project.version}`） | `pom.xml` |
@@ -104,10 +104,10 @@ mvn -o clean install -DskipTests   # 编译并装进本地仓库
 mvn -o test                        # 不依赖网络、也不依赖本机装了 aider
 ```
 
-第三方版本一律由父链 `z-boot-parent:1.1.0` 供给（它自己 import `spring-boot-dependencies:2.7.18` 等 BOM，
+第三方版本一律由父链 `z-boot-parent:1.2.0` 供给（它自己 import `spring-boot-dependencies:2.7.18` 等 BOM，
 并直接下发自家坐标版本表 —— `z-boot-fleet` / `z-boot-dependencies` 两个仓已退役），
 模块 POM 里不该再出现字面版本钉（`slf4j-api`、kotlin 四格、`z-util` 三格是刻意保留的例外）。
-若报解析不到 parent，先确认本地/镜像能取到 `io.github.yuku123:z-boot-parent:1.1.0`。
+若报解析不到 parent，先确认本地/镜像能取到 `io.github.yuku123:z-boot-parent:1.2.0`。
 
 用法（两个 adapter 都是普通 Java 对象，没有自动装配、没有 `@Bean`）：
 
@@ -202,7 +202,7 @@ mvn -o test
 ## 与内核版本的关系
 
 kernel 三坐标在本仓 POM 不写 `<version>`，面值由父链下发（`z-boot-fleet` 仓已退役，版本表并进 parent）。
-当前 `z-boot-parent:1.1.0` 的 `<z-agent-kernel.version>` 读数是 **`0.2.1`**
+当前 `z-boot-parent:1.2.0` 的 `<z-agent-kernel.version>` 读数是 **`0.2.1`**
 （复算：`curl -s https://repo1.maven.org/maven2/io/github/yuku123/z-boot-parent/1.1.0/z-boot-parent-1.1.0.pom | grep z-agent-kernel.version`），
 而 **`0.2.1` 确实已经在 repo1 上**：`z-agent-kernel-agent` / `-message` / `-types` 三个坐标的
 `maven-metadata.xml` 均列 `0.1.0 / 0.1.1 / 0.2.1 / 0.2.2 / 0.2.3`（对照组 `0.2.0` 从未发布 ⇒ `404`，

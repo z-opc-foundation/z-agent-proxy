@@ -44,3 +44,9 @@ node_modules/
 
 # 前端构建产物（suit 的 dist 不入库）
 **/dist/
+
+# ============ vite 构建旧产物（沙箱删除闸 ⇒ 只移不删，遗留带时间戳的兄弟目录） ============
+dist.stale-*/
+**/dist.stale-*/
+dist.bak-*/
+**/dist.bak-*/
