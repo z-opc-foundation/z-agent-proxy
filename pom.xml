@@ -34,8 +34,8 @@
     <version>${revision}</version>
     <packaging>jar</packaging>
 
-    <name>z-agent-proxy (Third-party Agent Adapter)</name>
-    <description>三方 agent 适配代理: Cursor / Operator / Aider / Codeium / Continue → z-agent-kernel Agent SPI</description>
+    <name>z-agent-proxy :: root</name>
+    <description>三方 agent 适配代理: Cursor / Operator / Aider / Codeium / Continue → z-agent-kernel Agent SPI / Third-party Agent Adapter</description>
     <url>https://github.com/z-opc-foundation/z-agent-proxy</url>
 
     <licenses>
